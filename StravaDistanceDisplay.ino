@@ -1,11 +1,11 @@
-#include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <Wire.h>
+#include <EEPROM.h>
 #include "Adafruit_LEDBackpack.h"
 #include "Adafruit_GFX.h"
+#include "WifiNetwork.h"
 
-const char* ssid = "foo";
-const char* password = "bar";
+WifiNetwork wifi;
 
 struct Stats {
   String month;
@@ -15,19 +15,10 @@ struct Stats {
 void setup() {
   Serial.begin(115200);
   delay(10);
-  Serial.printf("\n\n\n\nBooting up!\n");
+  Serial.println("Booting up!");
 
-  Serial.printf("Connecting to '%s'\n", ssid);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("\nWiFi connected, IP address:");
-  Serial.println(WiFi.localIP());
+  EEPROM.begin(1024);
+  wifi.begin();
 }
 
 void loop() {
@@ -40,11 +31,25 @@ void loop() {
 
   for (int i = 0; i < 10; i++) {
     display(s.month);
-    delay(10000);
+    idle(10000);
     display(s.total);
-    delay(10000);
+    idle(10000);
   }
 }
+
+/**
+ * Do approximate `delay` while polling for commands available over serial.
+ * (ESP8266 Arduino "framework" does not appear to provide serialEvent() callback)
+ */
+void idle(int ms) {
+  int delayed = 0;
+
+  while (delayed < ms) {
+    delay(100);
+    delayed += 100;
+    wifi.handleCommands();
+  }
+};
 
 Stats fetchStats() {
   HTTPClient http;
