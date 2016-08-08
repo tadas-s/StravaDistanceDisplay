@@ -1,11 +1,11 @@
 #include <ESP8266HTTPClient.h>
 #include <Wire.h>
 #include <EEPROM.h>
-#include "Adafruit_LEDBackpack.h"
-#include "Adafruit_GFX.h"
 #include "WifiNetwork.h"
+#include "Display.h"
 
 WifiNetwork wifi;
+Display display;
 
 struct Stats {
   String month;
@@ -13,12 +13,15 @@ struct Stats {
 };
 
 void setup() {
+  Wire.begin(4, 5);
   Serial.begin(115200);
   delay(10);
   Serial.println("Booting up!");
 
   EEPROM.begin(1024);
   wifi.begin();
+  
+  display.begin(0x70);
 }
 
 void loop() {
@@ -30,9 +33,9 @@ void loop() {
   Serial.println(s.total);
 
   for (int i = 0; i < 10; i++) {
-    display(s.month);
+    display.string(s.month);
     idle(10000);
-    display(s.total);
+    display.string(s.total);
     idle(10000);
   }
 }
@@ -90,25 +93,3 @@ Stats fetchStats() {
 
   return s;
 }
-
-void display(String s) {
-  Adafruit_AlphaNum4 alpha4 = Adafruit_AlphaNum4();
-  Wire.begin(4, 5);
-  alpha4.begin(0x70);
-
-  alpha4.clear();
-    
-  for (int i = s.length() - 1, j = 3; i >= 0 && j >= 0; i--, j--) {
-    bool dot = (s[i] == '.');
-
-    if (dot) {
-      i--;
-      alpha4.writeDigitAscii(j, s[i], true);  
-    } else {
-      alpha4.writeDigitAscii(j, s[i]);
-    }
-  }
-  
-  alpha4.writeDisplay();  
-}
-
