@@ -2,7 +2,7 @@
 
 void Display::string(String s) {
   clear();
-    
+      
   for (int i = s.length() - 1, j = 3; i >= 0 && j >= 0; i--, j--) {
     bool dot = (s[i] == '.');
 

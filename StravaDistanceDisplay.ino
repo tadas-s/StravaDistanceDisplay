@@ -10,33 +10,41 @@ Display display;
 struct Stats {
   String month;
   String total;
+  bool fail;
 };
 
 void setup() {
-  Wire.begin(4, 5);
   Serial.begin(115200);
   delay(10);
   Serial.println("Booting up!");
 
-  EEPROM.begin(1024);
-  wifi.begin();
-  
+  Wire.begin(4, 5);
   display.begin(0x70);
+  
+  display.string(String("WIFI"));
+  EEPROM.begin(1024);  
+  wifi.begin();
+  display.string(String("-OK-"));
 }
 
 void loop() {
   Stats s = fetchStats();
 
-  Serial.println("This month:");
-  Serial.println(s.month);
-  Serial.println("Total:");
-  Serial.println(s.total);
-
-  for (int i = 0; i < 10; i++) {
-    display.string(s.month);
-    idle(10000);
-    display.string(s.total);
-    idle(10000);
+  if (s.fail) {
+    display.string("FAIL");
+    idle(30000);
+  } else {
+    Serial.println("This month:");
+    Serial.println(s.month);
+    Serial.println("Total:");
+    Serial.println(s.total);
+  
+    for (int i = 0; i < 10; i++) {
+      display.string(s.month);
+      idle(10000);
+      display.string(s.total);
+      idle(10000);
+    } 
   }
 }
 
@@ -58,6 +66,8 @@ Stats fetchStats() {
   HTTPClient http;
   uint8_t buff[100] = { 0 };
   Stats s;
+
+  s.fail = false;
 
   http.begin(
     "https://www.strava.com/athletes/1640185",
@@ -86,7 +96,7 @@ Stats fetchStats() {
     s.total = String((char *)buff);
     s.total.trim();
   } else {
-    Serial.println("Fail?");
+    s.fail = true;
   }
 
   http.end();
