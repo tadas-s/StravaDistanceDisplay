@@ -1,6 +1,7 @@
 #include <ESP8266HTTPClient.h>
 #include <Wire.h>
 #include <EEPROM.h>
+#include <TickerScheduler.h>
 #include "WifiNetwork.h"
 #include "Display.h"
 
@@ -13,6 +14,10 @@ struct Stats {
   bool fail;
 };
 
+Stats stats;
+TickerScheduler tasks = TickerScheduler(2);
+bool showingTotals;
+
 void setup() {
   Serial.begin(115200);
   delay(10);
@@ -20,47 +25,39 @@ void setup() {
 
   Wire.begin(4, 5);
   display.begin(0x70);
-  
+
   display.string(String("WIFI"));
-  EEPROM.begin(1024);  
+  EEPROM.begin(1024);
   wifi.begin();
   display.string(String("-OK-"));
+
+  tasks.add(0, 120000, fetchStatsTask, true);
+  tasks.add(1, 10000, flipDisplayTask);
 }
 
 void loop() {
-  Stats s = fetchStats();
-
-  if (s.fail) {
-    display.string("FAIL");
-    idle(30000);
-  } else {
-    Serial.println("This month:");
-    Serial.println(s.month);
-    Serial.println("Total:");
-    Serial.println(s.total);
-  
-    for (int i = 0; i < 10; i++) {
-      display.string(s.month);
-      idle(10000);
-      display.string(s.total);
-      idle(10000);
-    } 
-  }
+  tasks.update();
+  wifi.handleCommands();
+  delay(250);
 }
 
-/**
- * Do approximate `delay` while polling for commands available over serial.
- * (ESP8266 Arduino "framework" does not appear to provide serialEvent() callback)
- */
-void idle(int ms) {
-  int delayed = 0;
+void fetchStatsTask() {
+  stats = fetchStats();
+}
 
-  while (delayed < ms) {
-    delay(100);
-    delayed += 100;
-    wifi.handleCommands();
+void flipDisplayTask() {
+  if (stats.fail) {
+    display.string("FAIL");
+    return;
   }
-};
+
+  if (showingTotals) {
+    display.string(stats.month);
+  } else {
+    display.string(stats.total);
+  }
+  showingTotals = !showingTotals;
+}
 
 Stats fetchStats() {
   HTTPClient http;
@@ -83,16 +80,16 @@ Stats fetchStats() {
     stream->find("<h3>Current Month</h3>");
     stream->find("<strong>");
     size_t read = stream->readBytesUntil('<', buff, sizeof(buff));
-    buff[read+1] = '\0'; // Dear Pete save us all if I ever manage 
-                         // to run 10^100km in a single month
+    buff[read + 1] = '\0'; // Dear Pete save us all if I ever manage
+                           // to run 10^100km in a single month
     s.month = String((char *)buff);
     s.month.trim();
-    
+
     // Total distance
     stream->find("<th>Total Distance</th>");
     stream->find("<td>");
     read = stream->readBytesUntil('<', buff, sizeof(buff));
-    buff[read+1] = '\0';
+    buff[read + 1] = '\0';
     s.total = String((char *)buff);
     s.total.trim();
   } else {
