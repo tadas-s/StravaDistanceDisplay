@@ -4,6 +4,7 @@
 #include <TickerScheduler.h>
 #include "WifiNetwork.h"
 #include "Display.h"
+#include "WebServer.h"
 
 WifiNetwork wifi;
 Display display;
@@ -17,6 +18,8 @@ struct Stats {
 Stats stats;
 TickerScheduler tasks = TickerScheduler(2);
 bool showingTotals;
+
+WebServer server;
 
 void setup() {
   Serial.begin(115200);
@@ -33,6 +36,9 @@ void setup() {
 
   tasks.add(0, 120000, fetchStatsTask, true);
   tasks.add(1, 10000, flipDisplayTask);
+
+  SPIFFS.begin();
+  server.begin();
 }
 
 void loop() {
