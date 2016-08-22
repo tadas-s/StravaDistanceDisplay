@@ -18,6 +18,9 @@
   "homepage": "https://github.com/tadas-s/StravaDistanceDisplay#readme",
   "dependencies": {
     "angular": "^1.5.8",
+    "angular-resource": "^1.5.8",
+    "angular-ui-bootstrap": "^2.1.2",
+    "bootstrap": "^3.3.7",
     "browserify": "^13.1.0",
     "grunt": "^1.0.1",
     "grunt-browserify": "^5.0.0",

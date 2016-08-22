@@ -21,6 +21,12 @@ module.exports = function(grunt) {
       favicon: {
         src: '<%= src %>/favicon.ico',
         dest: '<%= tmp %>/favicon.ico'
+      },
+      bootstrap: {
+        cwd: 'node_modules/bootstrap/dist/css',
+        expand: true,
+        src: './bootstrap*.min.css',
+        dest: '<%= tmp %>/'
       }
     },
 
@@ -63,6 +69,7 @@ module.exports = function(grunt) {
       'clean:tmp',
       'copy:index',
       'copy:favicon',
+      'copy:bootstrap',
       'browserify',
       'uglify',
       'clean:dist',
