@@ -23,7 +23,7 @@ void setup() {
   delay(10);
   Serial.println("Booting up!");
 
-  Wire.begin(4, 5);
+  Wire.begin(4, 5); // sda, scl
   display.begin(0x70);
 
   display.string(String("WIFI"));
